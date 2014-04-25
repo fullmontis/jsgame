@@ -1,0 +1,11 @@
+#cont {
+    width: 400px;
+    height: 400px;
+    margin: 0 auto;
+}
+
+#pause {
+    width: 100px;
+    margin: 0  auto;
+    color: #c00;
+}
