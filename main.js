@@ -14,7 +14,7 @@ var keys = [],
     keys_released = [];
 
 // IMPORTANT: no holes in urls!
-// we use imgaes_data.length to check the length!
+// we use images_data.length to check the length!
 var images_dir = "img/";
 var images_extension = ".png";
 var images_data = [
@@ -26,7 +26,7 @@ var sounds_extension = ".ogg";
 var sounds_data = [
 ];
 
-// here we get an extension that works for the current browser
+// here we get an audio extension that works for the current browser
 (function() {
     var audio = document.createElement("audio");
     var canplayogg = (typeof audio.canPlayType === "function" && 
@@ -41,44 +41,17 @@ var sounds_data = [
     }
 })();
 
-var images = [],
-    sounds = [],
-    won = false,
-    collisions_on = true,
-    states = new State ([
+var images = [];
+var sounds = [];
+var sprites = [];
+var won = false;
+var paused = false;
+var collisions_on = true;
+var states = new State ([
         new GameState(),
         new PauseState(),
         new MenuState()
     ], 0);
-
-function State(state_list, current) {
-    this.state_list = state_list;
-    this.state_stack = [];
-    this.lenght = 0;
-    
-    this.push = function (state_id) {
-        this.length = this.state_stack.push(state_id);
-    }
-
-    this.pop = function () {
-        this.length = this.state_stack.pop();
-    }
-
-    this.reset = function (state_id) {
-        this.state_stack = [stateid];
-        this.length = 1;
-    }
-    
-    this.current = function () {
-        return this.state_list[this.state_stack[this.length-1]];
-    }
-    
-    this.getState = function (state_id) {
-        return this.state_list[state_id];
-    };
-    
-    this.push(current);
-}
 
 document.addEventListener( 'keydown', function(e) {
     if (keys[e.keyCode]) {
@@ -96,7 +69,7 @@ document.addEventListener( 'keyup', function(e) {
         keys_released[e.keyCode] = true;
     }
 	keys[e.keyCode] = false;
-},false);
+}, false);
 
 mouse.update = function () {
     if (mouse.l && !mouse.lold) { mouse.lclick = true; } else { mouse.lclick = false; }
@@ -107,8 +80,8 @@ mouse.update = function () {
     mouse.mold = mouse.m;
     mouse.rold = mouse.r;
     
-    mouse.dx = mouse.x-mouse.xold;
-    mouse.dy = mouse.y-mouse.yold;
+    mouse.dx = mouse.x - mouse.xold;
+    mouse.dy = mouse.y - mouse.yold;
     
     mouse.xold = mouse.x;
     mouse.yold = mouse.y;
@@ -133,45 +106,11 @@ canvas.addEventListener( 'mouseup', function(e){
     if (e.which == 3) { mouse.r = false; }
 }, false);
 
-function load_resources() {
-    var toLoad = images_data.length + sounds_data.length;
-
-    var onload = function() {
-            toLoad--;
-            document.getElementById("k").innerHTML = toLoad;
-            if (toLoad == 0) {
-                load();
-                document.getElementById("k").innerHTML = "Done!";
-            }
-    }
-    
-    for (var i=0;i<images_data.length;i++) {
-        images[i] = new Image();
-        images[i].onload = onload;
-        images[i].src = images_dir + images_data[i] + images_extension;
-    }  
-    
-    for (var i=0;i<sounds_data.length;i++) {
-        sounds[i] = new Audio();
-        sounds[i].oncanplaythrough = onload;
-        sounds[i].src = sounds_dir + sounds_data[i] + sounds_extension;
-    }
-    
-
-}
-
-function load() {
-    // sprite loading
-    window.ball = new Sprite();
-    // start main loop
-    main();
-}
-
-function collide(spr1, spr2) {
-    if (spr1.x-spr1.anchorx < spr2.x-spr2.anchorx+spr2.collx &&
-        spr2.x-spr2.anchorx < spr1.x-spr1.anchorx+spr1.collx &&
-        spr1.y-spr1.anchory < spr2.y-spr2.anchory+spr2.colly &&
-        spr2.y-spr2.anchory < spr1.y-spr1.anchory+spr1.colly &&
+function doCollide( spr1, spr2 ) {
+    if (spr1.x-spr1.anchorx < spr2.x-spr2.anchorx+spr2.collw &&
+        spr2.x-spr2.anchorx < spr1.x-spr1.anchorx+spr1.collw &&
+        spr1.y-spr1.anchory < spr2.y-spr2.anchory+spr2.collh &&
+        spr2.y-spr2.anchory < spr1.y-spr1.anchory+spr1.collh &&
         spr1.can_collide && spr2.can_collide) {
         return true;
     } else {
@@ -179,65 +118,72 @@ function collide(spr1, spr2) {
     }
 }
 
-// To implements
-function collides_at(spr,x,y) {
+function collidesAt( spr, x, y ) {
     if (x >= spr.x-spr.anchorx &&
-        x <= spr.x-spr.anchorx+spr.collx &&
+        x <= spr.x-spr.anchorx+spr.collw &&
         y >= spr.y-spr.anchory &&
-        y <= spr.y-spr.anchory+spr.colly) {
+        y <= spr.y-spr.anchory+spr.collh) {
         return true;
     } else {
         return false;
     }
 }
 
-function win() {
+function State(state_list, current) {
+    this.state_list = state_list;
+    this.state_stack = [];
+    
+    this.push = function (state_id) {
+        this.length = this.state_stack.push(state_id);
+    }
 
+    this.pop = function () {
+        this.length = this.state_stack.pop();
+    }
+
+    this.reset = function (state_id) {
+        this.state_stack = [stateid];
+    }
+    
+    this.current = function () {
+        return this.state_list[this.state_stack[this.length-1]];
+    }
+    
+    this.getState = function (state_id) {
+        return this.state_list[state_id];
+    };
+    
+    this.push(current);
 }
 
 function GameState() {
     this.update = function () {
         mouse.update();
-
         keys_pressed = [];
         keys_released = [];
+
+	for( var name in sprites ) {
+	    sprites[name].update();
+	}
     };
     
     this.draw = function () {
         ctx.fillStyle = BACKGROUND_FILL;
         ctx.fillRect(0,0,SCREEN_W,SCREEN_H);
-        
-        ball.draw();
+	for( var name in sprites ) {
+	    sprites[name].draw();
+	}
     };
 }
 
 function PauseState() {
     this.update = function () {
         mouse.update();
-
         keys_pressed = [];
         keys_released = [];
     };
     
     this.draw = function () {
-        /*
-        ctx.fillStyle = "#aaa";
-        ctx.fillRect(0,0,canvas.width,canvas.height);
-        for (var i=0;i<ENEMIES_MAX;i++) {
-            var sprite = enemies[i];
-            ctx.save();
-            ctx.translate(sprite.x,sprite.y);
-            ctx.rotate(sprite.angle);
-            ctx.drawImage(images[sprite.img], -sprite.anchorx, -sprite.anchory);
-            ctx.restore();
-        }
-        for (var i=0;i<BULLETS_MAX;i++) {
-            var sprite = bullets[i];
-            ctx.drawImage(images[sprite.img], sprite.x-sprite.anchorx, sprite.y-sprite.anchory);
-        }
-        powerup.draw();
-        hero.draw();
-        */
         states.getState(0).draw();
     };
 }
@@ -270,15 +216,15 @@ function Button(label, x, y, state) {
     this.label = label;
     this.x = x;
     this.y = y;
-    this.collx = 100;
-    this.colly = 30;
-    this.anchorx = this.collx/2;
-    this.anchory = this.colly/2;
+    this.collw = 100;
+    this.collh = 30;
+    this.anchorx = this.collw/2;
+    this.anchory = this.collh/2;
     this.over = false;
     this.state = state;
 
     this.update = function() {
-        if ( collides_at( this, mouse.x, mouse.y ) ) {
+        if ( collidesAt( this, mouse.x, mouse.y ) ) {
             this.over = true;
         } else {
             this.over = false;
@@ -295,22 +241,22 @@ function Button(label, x, y, state) {
         } else {
             ctx.fillStyle = "#a00";
         }
-        ctx.fillRect(this.x-this.anchorx,this.y-this.anchory,this.collx,this.colly);
+        ctx.fillRect(this.x-this.anchorx,this.y-this.anchory,this.collw,this.collh);
         ctx.fillStyle = "#ddd";
         ctx.fillText(this.label,this.x,this.y);
     };
 }
 
-function Sprite() {
-    this.img = 0;
-    this.x = SCREEN_W/2;
-    this.y = SCREEN_H/2;
-    this.anchorx = images[this.img].width/2;
-    this.anchory = images[this.img].height/2;
-    this.collx = images[this.img].width;
-    this.colly = images[this.img].height;
+function Sprite( img, x, y, alpha, anchorx, anchory ) {
+    this.img = img;
+    this.x = x;
+    this.y = y;
+    this.alpha = alpha || 1;
+    this.anchorx = anchorx || images[this.img].width/2;
+    this.anchory = anchory || images[this.img].height/2;
+    this.collw = images[this.img].width;
+    this.collh = images[this.img].height;
     this.can_collide = true;
-    this.alpha = 1;
 
     this.update = function () {
 
@@ -339,14 +285,21 @@ function Animation(img_id, anchorx, anchory, w, h, nx, ny, dt_in_frames) {
     
     this.elapsed_frames = 0;
     
-    if (this.w*this.nx != images[this.img].width || this.h*this.ny != images[this.img].height) {
+    if (this.w*this.nx != images[this.img].width || 
+	this.h*this.ny != images[this.img].height) {
         throw "Incorrect sprite size or number of frames specified";
     }
     
     this.draw = function(xpos,ypos,scale) {
         if (scale === undefined) scale = 1;
-        ctx.drawImage(images[this.img],this.current_framex*this.w,this.current_framey*this.h,this.w,this.h,
-                      xpos-this.anchorx,ypos-this.anchory,this.w*scale,this.h*scale);
+        ctx.drawImage(images[this.img],
+		      this.current_framex*this.w,
+		      this.current_framey*this.h,
+		      this.w,this.h,
+                      xpos-this.anchorx,
+		      ypos-this.anchory,
+		      this.w*scale,
+		      this.h*scale);
         this.elapsed_frames++;
         if (this.elapsed_frames>=this.dt) {
             this.current_framex++;
@@ -363,7 +316,7 @@ function Animation(img_id, anchorx, anchory, w, h, nx, ny, dt_in_frames) {
     }
 }
 
-function play_sound(id) {
+function playSound(id) {
     if (sounds_on) {
         sounds[id].play();
     }
@@ -375,16 +328,52 @@ function putinside(value,min,max) {
     return value;
 }
 
-function toggle(bool) {
-    if (bool) return false;
-    return true;
-}
-
-function main() {
-    window.requestAnimationFrame(main);
+function startGame() {
+    window.requestAnimationFrame(startGame);
+    if( keys_pressed[80] ) { // p: pause
+	if( paused ) {
+	    states.pop();
+	} else {
+	    states.push(1);
+	}
+	paused = !paused;
+    }
     states.current().update();
     states.current().draw();
 }
 
-load_resources();
+function load() {
+    // load resources
+    var toload = images_data.length + sounds_data.length;
+    var loaded = 0;
+    var onload = function() {
+        loaded++;
+	var percent = loaded/toload*100;
+        document.getElementById("k").innerHTML = percent.toFixed(1)+" % loaded";
+        if ( loaded == toload ) {
+            startGame();
+	}
+    }
+    
+    for (var i=0;i<images_data.length;i++) {
+        images[i] = new Image();
+        images[i].onload = onload;
+        images[i].src = images_dir + images_data[i] + images_extension;
+    }  
+    
+    for (var i=0;i<sounds_data.length;i++) {
+        sounds[i] = new Audio();
+        sounds[i].oncanplaythrough = onload;
+        sounds[i].src = sounds_dir + sounds_data[i] + sounds_extension;
+    }
+
+    // load sprites
+    sprites.ball = new Sprite(0, 100, 100);
+    sprites.ball.update = function () {
+	this.x = mouse.x;
+	this.y = mouse.y;
+    }
+}
+
+load();
 
