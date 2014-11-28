@@ -5,7 +5,8 @@ canvas.oncontextmenu = function () {
 var ctx = canvas.getContext("2d");
 var game = new Game( ctx );
 game.start();
-var FPS = 60;
+
+var DEBUG = true;
 var SCREEN_W = canvas.width;
 var SCREEN_H = canvas.height;
 var SPRITE_W = 32;
@@ -26,6 +27,10 @@ function Game( context ) {
     this.start = function() {
 	image.load( sound.curryLoad( tick ) );
     };
+    
+    var fps = 0;
+    var last = Date.now();
+    var frameCount = 0;
 
     function tick() {
 	if( mouse.lclick ) {
@@ -34,7 +39,22 @@ function Game( context ) {
 	}
 	states.getCurrent().update();
 	states.getCurrent().draw( context );
-	setTimeout( tick, 1000/FPS );
+
+	// fps calculation
+	if( DEBUG ) {
+	    var now = Date.now();
+	    var fpsNew = 1000/(now-last);
+	    last = now;
+	    if( frameCount <= 0 ) { 
+		fps = fpsNew; frameCount = 30; 
+	    } else { 
+		frameCount--; 
+	    }
+
+	    context.text( fps.toFixed(0), 10, 10 ); 
+	}
+
+	requestAnimationFrame( tick );
     }
 }
 
@@ -43,10 +63,8 @@ function Ball( x, y, alpha ) {
     this.y = y;
     this.alpha = alpha;
     this.radius = 20;
-
     this.update = function() {
     };
-
     this.draw = function( context ) {
 	context.circle( this.x, this.y, this.radius, "#f00", this.alpha );
     };
@@ -59,11 +77,9 @@ function System() {
     for( var i=0; i<10; i++ ) {
 	this.balls.push(new Ball((i+1)*30, 100, i/10));
     }
-
     this.update = function() {
 	this.angle += 0.02;
     };
-
     this.draw = function( context ) {
 	context.save();
 	context.translate(200,200);
