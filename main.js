@@ -18,40 +18,58 @@ var states = new StateStack ([
     new IntroState(["SIGIL"])
 ], 0);
 
+function FPS() {
+    var fps = 0;
+    var timeCount = 0;
+    var frameCount = 0;
+
+    this.update = function( dt ) {
+	timeCount += dt; 
+	if( timeCount > 2000 ) { 
+	    fps = frameCount*1000/timeCount; 
+	    timeCount = 0;
+	    frameCount = 0;
+	} else { 
+	    frameCount++;
+	}
+    };
+
+    this.draw = function( context ) {
+	context.text( fps.toFixed(0), 10, 10 ); 
+    };
+}
+
 function Game( context ) {
     var context = context;
 
     var image = new ImageList( ["ball"], "img/", ".png" );
     var sound = new AudioList( ["step"], "snd/", ".wav" );
+    var fps = new FPS();
+
+    var last = Date.now();
+    var dt = 0;
 
     this.start = function() {
 	image.load( sound.curryLoad( tick ) );
     };
     
-    var fps = 0;
-    var last = Date.now();
-    var frameCount = 0;
-
     function tick() {
 	if( mouse.lclick ) {
 	    sound[0].currentTime = 0;
 	    sound[0].play();
 	}
-	states.getCurrent().update();
+	
+	now = Date.now();
+	dt = now-last;
+	last = now;
+
+	states.getCurrent().update( dt );
 	states.getCurrent().draw( context );
 
 	// fps calculation
 	if( DEBUG ) {
-	    var now = Date.now();
-	    var fpsNew = 1000/(now-last);
-	    last = now;
-	    if( frameCount <= 0 ) { 
-		fps = fpsNew; frameCount = 30; 
-	    } else { 
-		frameCount--; 
-	    }
-
-	    context.text( fps.toFixed(0), 10, 10 ); 
+	    fps.update(dt);
+	    fps.draw(context);
 	}
 
 	requestAnimationFrame( tick );
