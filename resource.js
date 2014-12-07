@@ -23,11 +23,11 @@ function ImageList( files, dir, extension ) {
 	};
 	
 	for (var i=0;i<toload;i++) {
-	    this[i] = new Image();
-	    this[i].onload = onload;
-	    this[i].src = this.dir + this.files[i] + this.extension;
+	    this[this.files[i]] = new Image();
+	    this[this.files[i]].onload = onload;
+	    this[this.files[i]].src = this.dir + this.files[i] + this.extension;
 	}
-    }
+    };
     
     this.curryLoad = function( callback ) {
 	return function() {
@@ -59,11 +59,11 @@ function AudioList( files, dir, extension ) {
 	};
 	
 	for (var i=0;i<toload;i++) {
-	    this[i] = new Audio();
-	    this[i].oncanplaythrough = onload;
-	    this[i].src = this.dir + this.files[i] + this.extension;
+	    this[this.files[i]] = new Audio();
+	    this[this.files[i]].oncanplaythrough = onload;
+	    this[this.files[i]].src = this.dir + this.files[i] + this.extension;
 	}
-    }
+    };
 
         this.curryLoad = function( callback ) {
 	return function() {
